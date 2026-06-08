@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -19,9 +19,7 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedLine = Animated.createAnimatedComponent(Line);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HORIZONTAL_PADDING = Spacing.md;
-const CHART_WIDTH = SCREEN_WIDTH - CHART_HORIZONTAL_PADDING * 2;
 const CHART_HEIGHT = 220;
 const CHART_VERTICAL_PADDING = 20;
 
@@ -95,6 +93,9 @@ function formatTimestamp(ts: string, range: TimeRange): string {
 }
 
 export function HeartRateScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const chartWidth = screenWidth - CHART_HORIZONTAL_PADDING * 2;
+
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1D');
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -137,8 +138,8 @@ export function HeartRateScreen() {
   }, [chartPoints]);
 
   const pathD = useMemo(
-    () => buildPath(chartPoints, CHART_WIDTH, CHART_HEIGHT, minVal, maxVal),
-    [chartPoints, minVal, maxVal],
+    () => buildPath(chartPoints, chartWidth, CHART_HEIGHT, minVal, maxVal),
+    [chartPoints, chartWidth, minVal, maxVal],
   );
 
   const currentBpm = activeIndex !== null ? chartPoints[activeIndex]?.value ?? todayData.restingHR : todayData.restingHR;
@@ -152,7 +153,7 @@ export function HeartRateScreen() {
 
   const updateActiveIndex = useCallback(
     (x: number) => {
-      const stepX = CHART_WIDTH / Math.max(chartPoints.length - 1, 1);
+      const stepX = chartWidth / Math.max(chartPoints.length - 1, 1);
       const idx = Math.round(x / stepX);
       const clampedIdx = Math.max(0, Math.min(chartPoints.length - 1, idx));
       setActiveIndex(clampedIdx);
@@ -202,7 +203,7 @@ export function HeartRateScreen() {
   }));
 
   const cursorPoint = activeIndex !== null
-    ? getPointAtIndex(chartPoints, activeIndex, CHART_WIDTH, CHART_HEIGHT, minVal, maxVal)
+    ? getPointAtIndex(chartPoints, activeIndex, chartWidth, CHART_HEIGHT, minVal, maxVal)
     : null;
 
   const animatedCircleProps = useAnimatedProps(() => ({
@@ -244,7 +245,7 @@ export function HeartRateScreen() {
         <View style={styles.chartContainer}>
           <GestureDetector gesture={composedGesture}>
             <Animated.View style={styles.chartWrapper}>
-              <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+              <Svg width={chartWidth} height={CHART_HEIGHT}>
                 <Path
                   d={pathD}
                   stroke={Colors.chartLine}
@@ -395,7 +396,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   chartWrapper: {
-    width: CHART_WIDTH,
     height: CHART_HEIGHT,
   },
   statRow: {
