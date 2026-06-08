@@ -88,6 +88,9 @@ function formatTimestamp(ts: string, range: TimeRange): string {
   if (range === '1D') {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+  if (range === 'All' || range === '1Y') {
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: '2-digit' });
+  }
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
@@ -104,6 +107,7 @@ export function HeartRateScreen() {
   const monthlyData = useMemo(() => generateMonthlyHR(30), []);
   const threeMonthData = useMemo(() => generateMonthlyHR(90), []);
   const yearData = useMemo(() => generateMonthlyHR(365), []);
+  const allData = useMemo(() => generateMonthlyHR(730), []);
 
   const chartPoints = useMemo((): HeartRatePoint[] => {
     switch (selectedRange) {
@@ -117,10 +121,12 @@ export function HeartRateScreen() {
         return threeMonthData.points;
       case '1Y':
         return yearData.points;
+      case 'All':
+        return allData.points;
       default:
         return todayData.timelinePoints;
     }
-  }, [selectedRange, todayData, weeklyData, monthlyData, threeMonthData, yearData]);
+  }, [selectedRange, todayData, weeklyData, monthlyData, threeMonthData, yearData, allData]);
 
   const { minVal, maxVal } = useMemo(() => {
     const values = chartPoints.map((p) => p.value);

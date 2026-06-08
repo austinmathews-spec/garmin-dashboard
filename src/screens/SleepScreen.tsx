@@ -457,19 +457,36 @@ export function SleepScreen() {
     }
   }, []);
 
+  const generateSleepData = useCallback((days: number): SleepSummary[] => {
+    const results: SleepSummary[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+      const totalMin = 400 + Math.round(Math.random() * 120);
+      results.push({
+        ...getMockSleep(d),
+        totalSleepMinutes: totalMin,
+        sleepScore: 65 + Math.round(Math.random() * 30),
+      });
+    }
+    return results;
+  }, []);
+
   const trendData = useMemo(() => {
-    // For simplicity, use weekly data for all ranges but can be extended
     switch (timeRange) {
       case '1W':
         return weeklySleep;
       case '1M':
-        return [...weeklySleep, ...getMockWeeklySleep()].slice(0, 30);
+        return generateSleepData(30);
       case '3M':
-        return [...weeklySleep, ...getMockWeeklySleep(), ...getMockWeeklySleep()].slice(0, 90);
+        return generateSleepData(90);
+      case '1Y':
+        return generateSleepData(365);
+      case 'All':
+        return generateSleepData(730);
       default:
         return weeklySleep;
     }
-  }, [timeRange, weeklySleep]);
+  }, [timeRange, weeklySleep, generateSleepData]);
 
   return (
     <GestureHandlerRootView style={styles.flex}>
@@ -546,7 +563,7 @@ export function SleepScreen() {
             <View style={styles.chartContainer}>
               {/* Time range selector for trend */}
               <View style={styles.trendRangeRow}>
-                {(['1W', '1M', '3M'] as TimeRange[]).map((r) => (
+                {(['1W', '1M', '3M', '1Y', 'All'] as TimeRange[]).map((r) => (
                   <TouchableOpacity
                     key={r}
                     style={[

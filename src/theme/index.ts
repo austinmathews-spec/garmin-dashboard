@@ -1,10 +1,10 @@
 export const Colors = {
-  background: '#000000',
-  surface: '#1A1A1A',
-  surfaceLight: '#2A2A2A',
-  text: '#FFFFFF',
+  background: '#FFFFFF',
+  surface: '#F2F2F7',
+  surfaceLight: '#E5E5EA',
+  text: '#000000',
   textSecondary: '#8E8E93',
-  textTertiary: '#636366',
+  textTertiary: '#AEAEB2',
 
   // Accent colors
   green: '#00C805',
@@ -14,7 +14,7 @@ export const Colors = {
   orange: '#FF9500',
 
   // Heart rate zones
-  hrRest: '#4CD964',
+  hrRest: '#34C759',
   hrFatBurn: '#FFCC00',
   hrCardio: '#FF9500',
   hrPeak: '#FF3B30',
@@ -32,8 +32,8 @@ export const Colors = {
 
   // Chart
   chartLine: '#00C805',
-  chartGrid: '#2A2A2A',
-  chartCursor: '#FFFFFF',
+  chartGrid: '#E5E5EA',
+  chartCursor: '#000000',
 };
 
 export const Spacing = {

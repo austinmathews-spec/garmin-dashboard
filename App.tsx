@@ -7,7 +7,7 @@ import { AppNavigator } from './src/navigation';
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <AppNavigator />
     </GestureHandlerRootView>
   );
@@ -16,6 +16,6 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
   },
 });

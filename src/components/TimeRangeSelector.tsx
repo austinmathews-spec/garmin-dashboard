@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import type { TimeRange } from '../types';
 
-const RANGES: TimeRange[] = ['1D', '1W', '1M', '3M', '1Y'];
+const RANGES: TimeRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
 
 interface TimeRangeSelectorProps {
   selected: TimeRange;
