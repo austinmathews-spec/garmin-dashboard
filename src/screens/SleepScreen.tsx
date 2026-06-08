@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Rect, Line, Path, Circle } from 'react-native-svg';
@@ -25,8 +25,6 @@ import { Card } from '../components';
 import { getMockSleep, getMockWeeklySleep } from '../utils/mockData';
 import type { SleepSummary, SleepStage, TimeRange } from '../types';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CHART_WIDTH = SCREEN_WIDTH - Spacing.md * 2;
 const CHART_HEIGHT = 120;
 const TREND_CHART_HEIGHT = 160;
 const CURSOR_WIDTH = 2;
@@ -80,12 +78,13 @@ function getAvgSleepMinutes(data: SleepSummary[]): number {
 
 interface LastNightChartProps {
   sleep: SleepSummary;
+  chartWidth: number;
   onScrub: (stage: SleepStage | null, timeLabel: string | null) => void;
 }
 
-function LastNightChart({ sleep, onScrub }: LastNightChartProps) {
+function LastNightChart({ sleep, chartWidth, onScrub }: LastNightChartProps) {
   const chartPadding = Spacing.sm;
-  const availableWidth = CHART_WIDTH - chartPadding * 2;
+  const availableWidth = chartWidth - chartPadding * 2;
   const barHeight = 20;
   const rowHeight = barHeight + 8;
   const chartInnerHeight = rowHeight * 4;
@@ -142,11 +141,11 @@ function LastNightChart({ sleep, onScrub }: LastNightChartProps) {
   const panGesture = Gesture.Pan()
     .onStart((e) => {
       isActive.value = true;
-      cursorX.value = Math.max(0, Math.min(e.x, CHART_WIDTH));
+      cursorX.value = Math.max(0, Math.min(e.x, chartWidth));
       runOnJS(handleScrub)(e.x);
     })
     .onUpdate((e) => {
-      cursorX.value = Math.max(0, Math.min(e.x, CHART_WIDTH));
+      cursorX.value = Math.max(0, Math.min(e.x, chartWidth));
       runOnJS(handleScrub)(e.x);
     })
     .onEnd(() => {
@@ -160,7 +159,7 @@ function LastNightChart({ sleep, onScrub }: LastNightChartProps) {
     .minDuration(150)
     .onStart((e) => {
       isActive.value = true;
-      cursorX.value = Math.max(0, Math.min(e.x, CHART_WIDTH));
+      cursorX.value = Math.max(0, Math.min(e.x, chartWidth));
       runOnJS(handleScrub)(e.x);
     });
 
@@ -179,7 +178,7 @@ function LastNightChart({ sleep, onScrub }: LastNightChartProps) {
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={{ height: chartInnerHeight + 30 }}>
-        <Svg width={CHART_WIDTH} height={chartInnerHeight}>
+        <Svg width={chartWidth} height={chartInnerHeight}>
           {stageBlocks.map((block, i) => (
             <Rect
               key={i}
@@ -221,12 +220,13 @@ function LastNightChart({ sleep, onScrub }: LastNightChartProps) {
 
 interface TrendChartProps {
   data: SleepSummary[];
+  chartWidth: number;
   onScrub: (item: SleepSummary | null) => void;
 }
 
-function TrendChart({ data, onScrub }: TrendChartProps) {
+function TrendChart({ data, chartWidth, onScrub }: TrendChartProps) {
   const chartPadding = Spacing.md;
-  const availableWidth = CHART_WIDTH - chartPadding * 2;
+  const availableWidth = chartWidth - chartPadding * 2;
   const availableHeight = TREND_CHART_HEIGHT - 40;
 
   const cursorX = useSharedValue(-1);
@@ -326,7 +326,7 @@ function TrendChart({ data, onScrub }: TrendChartProps) {
   return (
     <GestureDetector gesture={composedGesture}>
       <View style={{ height: TREND_CHART_HEIGHT }}>
-        <Svg width={CHART_WIDTH} height={TREND_CHART_HEIGHT}>
+        <Svg width={chartWidth} height={TREND_CHART_HEIGHT}>
           {/* Grid lines */}
           {[0.25, 0.5, 0.75].map((frac) => (
             <Line
@@ -413,6 +413,9 @@ function StagesBar({ sleep }: StagesBarProps) {
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export function SleepScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const chartWidth = screenWidth - Spacing.md * 2;
+
   const [mode, setMode] = useState<ChartMode>('lastNight');
   const [timeRange, setTimeRange] = useState<TimeRange>('1W');
 
@@ -557,7 +560,7 @@ export function SleepScreen() {
           {/* Chart */}
           {mode === 'lastNight' ? (
             <View style={styles.chartContainer}>
-              <LastNightChart sleep={todaySleep} onScrub={handleLastNightScrub} />
+              <LastNightChart sleep={todaySleep} chartWidth={chartWidth} onScrub={handleLastNightScrub} />
             </View>
           ) : (
             <View style={styles.chartContainer}>
@@ -583,7 +586,7 @@ export function SleepScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TrendChart data={trendData} onScrub={handleTrendScrub} />
+              <TrendChart data={trendData} chartWidth={chartWidth} onScrub={handleTrendScrub} />
             </View>
           )}
 
@@ -727,9 +730,12 @@ const styles = StyleSheet.create({
   },
   rangePill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm + 2,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.surfaceLight,
+    minHeight: 36,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   rangePillActive: {
     backgroundColor: Colors.green,

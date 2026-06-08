@@ -37,9 +37,12 @@ const styles = StyleSheet.create({
   },
   pill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: Spacing.sm + 2,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.surfaceLight,
+    minHeight: 36,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   pillActive: {
     backgroundColor: Colors.green,

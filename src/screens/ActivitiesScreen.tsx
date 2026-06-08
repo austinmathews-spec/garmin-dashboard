@@ -7,7 +7,7 @@ import {
   Pressable,
   Modal,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
@@ -25,13 +25,11 @@ import type { Activity, HeartRatePoint } from '../types';
 
 // ── Constants ──
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_H = 200;
 const CHART_PADDING_LEFT = 40;
 const CHART_PADDING_RIGHT = 16;
 const CHART_PADDING_TOP = 16;
 const CHART_PADDING_BOTTOM = 28;
-const CHART_INNER_W = SCREEN_WIDTH - Spacing.md * 2 - CHART_PADDING_LEFT - CHART_PADDING_RIGHT;
 const CHART_INNER_H = CHART_H - CHART_PADDING_TOP - CHART_PADDING_BOTTOM;
 
 const ACTIVITY_ICONS: Record<string, string> = {
@@ -197,10 +195,13 @@ const cardStyles = StyleSheet.create({
 function HRChart({
   points,
   durationMinutes,
+  containerWidth,
 }: {
   points: HeartRatePoint[];
   durationMinutes: number;
+  containerWidth: number;
 }) {
+  const chartInnerW = containerWidth - CHART_PADDING_LEFT - CHART_PADDING_RIGHT;
   const [cursorInfo, setCursorInfo] = useState<{ hr: number; elapsed: string } | null>(null);
   const cursorX = useSharedValue(-1);
   const isActive = useSharedValue(false);
@@ -214,7 +215,7 @@ function HRChart({
 
     let d = '';
     for (let i = 0; i < points.length; i++) {
-      const x = CHART_PADDING_LEFT + (i / (points.length - 1)) * CHART_INNER_W;
+      const x = CHART_PADDING_LEFT + (i / (points.length - 1)) * chartInnerW;
       const y = CHART_PADDING_TOP + (1 - (points[i].value - mn) / range) * CHART_INNER_H;
       d += i === 0 ? `M${x},${y}` : ` L${x},${y}`;
     }
@@ -226,11 +227,11 @@ function HRChart({
     }
 
     return { minHR: mn, maxHR: mx, pathD: d, yLabels: labels };
-  }, [points]);
+  }, [points, chartInnerW]);
 
   const updateCursor = useCallback(
     (x: number) => {
-      const ratio = Math.max(0, Math.min(1, (x - CHART_PADDING_LEFT) / CHART_INNER_W));
+      const ratio = Math.max(0, Math.min(1, (x - CHART_PADDING_LEFT) / chartInnerW));
       const idx = Math.round(ratio * (points.length - 1));
       if (idx >= 0 && idx < points.length) {
         const elapsedMin = Math.round(ratio * durationMinutes);
@@ -291,7 +292,7 @@ function HRChart({
       )}
       <GestureDetector gesture={composedGesture}>
         <Animated.View>
-          <Svg width={SCREEN_WIDTH - Spacing.md * 2} height={CHART_H}>
+          <Svg width={containerWidth} height={CHART_H}>
             {/* Grid lines + Y-axis labels */}
             {yLabels.map((v) => {
               const y = CHART_PADDING_TOP + (1 - (v - minHR) / range) * CHART_INNER_H;
@@ -300,7 +301,7 @@ function HRChart({
                   <Line
                     x1={CHART_PADDING_LEFT}
                     y1={y}
-                    x2={CHART_PADDING_LEFT + CHART_INNER_W}
+                    x2={CHART_PADDING_LEFT + chartInnerW}
                     y2={y}
                     stroke={Colors.chartGrid}
                     strokeWidth={1}
@@ -355,6 +356,8 @@ function ActivityDetail({
   activity: Activity;
   onClose: () => void;
 }) {
+  const { width: screenWidth } = useWindowDimensions();
+  const chartContainerWidth = screenWidth - Spacing.md * 2;
   const insets = useSafeAreaInsets();
   const accentColor = ACTIVITY_COLORS[activity.type] ?? Colors.green;
   const icon = ACTIVITY_ICONS[activity.type] ?? '\u{1F3C3}';
@@ -392,7 +395,7 @@ function ActivityDetail({
       <ScrollView style={detailStyles.scroll} showsVerticalScrollIndicator={false}>
         {/* HR Chart */}
         <Card title="Heart Rate">
-          <HRChart points={hrPoints} durationMinutes={activity.durationMinutes} />
+          <HRChart points={hrPoints} durationMinutes={activity.durationMinutes} containerWidth={chartContainerWidth} />
         </Card>
 
         {/* Summary Stats */}
