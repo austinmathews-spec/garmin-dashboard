@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { useDataSource } from '../utils/DataSourceContext';
 
 interface SettingRowProps {
   label: string;
@@ -47,9 +48,19 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export function SettingsScreen() {
-  const [useMockData, setUseMockData] = useState(true);
+  const { source, setSource } = useDataSource();
+  const useMockData = source === 'mock';
   const [notifications, setNotifications] = useState(false);
   const [haptics, setHaptics] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+
+  useEffect(() => {
+    fetch('/api/garmin/today')
+      .then((r) => {
+        setConnectionStatus(r.ok ? 'connected' : 'error');
+      })
+      .catch(() => setConnectionStatus('error'));
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -62,10 +73,13 @@ export function SettingsScreen() {
             label="Use Mock Data"
             isToggle
             toggleValue={useMockData}
-            onToggle={setUseMockData}
+            onToggle={(val) => setSource(val ? 'mock' : 'live')}
           />
           <View style={styles.separator} />
-          <SettingRow label="Garmin Account" value="Not connected" />
+          <SettingRow
+            label="Garmin Account"
+            value={connectionStatus === 'checking' ? 'Checking...' : connectionStatus === 'connected' ? 'Connected' : 'Not configured'}
+          />
           <View style={styles.separator} />
           <SettingRow label="Sync Frequency" value="Every 15 min" />
         </View>

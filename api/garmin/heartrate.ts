@@ -1,7 +1,5 @@
-// Vercel serverless function — GET /api/garmin/heartrate?date=YYYY-MM-DD
-// Returns heart rate data for a given day
-
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { getGarminClient } from './_client';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
@@ -9,19 +7,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const date = (req.query.date as string) ?? new Date().toISOString().split('T')[0];
+    const dateStr = req.query.date as string | undefined;
+    const date = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
 
-    // TODO: Replace with real garmin-connect fetch
-    // const GarminConnect = require('garmin-connect').GarminConnect;
-    // const client = new GarminConnect({ username: process.env.GARMIN_EMAIL, password: process.env.GARMIN_PASSWORD });
-    // await client.login();
-    // const hr = await client.getHeartRate(date);
+    const client = await getGarminClient();
+    const hr = await client.getHeartRate(date);
+
+    const points = (hr.heartRateValues ?? [])
+      .flat()
+      .filter((entry: { heartrate: number; timestamp: number }) => entry.heartrate > 0)
+      .map((entry: { heartrate: number; timestamp: number }) => ({
+        timestamp: new Date(entry.timestamp).toISOString(),
+        value: entry.heartrate,
+      }));
 
     return res.status(200).json({
-      date,
-      message: 'Heart rate endpoint ready — wire up garmin-connect',
+      date: hr.calendarDate,
+      restingHeartRate: hr.restingHeartRate,
+      maxHeartRate: hr.maxHeartRate,
+      minHeartRate: hr.minHeartRate,
+      lastSevenDaysAvgRestingHeartRate: hr.lastSevenDaysAvgRestingHeartRate,
+      points,
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch heart rate data' });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Heart rate fetch failed:', message);
+    return res.status(500).json({ error: 'Failed to fetch heart rate data', details: message });
   }
 }

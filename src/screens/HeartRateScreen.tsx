@@ -13,6 +13,8 @@ import Svg, { Path, Line, Circle } from 'react-native-svg';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { Card, TimeRangeSelector } from '../components';
 import { getMockHeartRate, getMockWeeklyHR } from '../utils/mockData';
+import { useHeartRateData } from '../utils/useGarminData';
+import { useDataSource } from '../utils/DataSourceContext';
 import type { HeartRatePoint, HeartRateZone, TimeRange } from '../types';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -103,7 +105,11 @@ export function HeartRateScreen() {
   const cursorX = useSharedValue(-1);
   const cursorOpacity = useSharedValue(0);
 
-  const todayData = useMemo(() => getMockHeartRate(), []);
+  const { source } = useDataSource();
+  const { data: liveHR } = useHeartRateData(source);
+
+  const mockData = useMemo(() => getMockHeartRate(), []);
+  const todayData = liveHR ?? mockData;
   const weeklyData = useMemo(() => getMockWeeklyHR(), []);
   const monthlyData = useMemo(() => generateMonthlyHR(30), []);
   const threeMonthData = useMemo(() => generateMonthlyHR(90), []);
