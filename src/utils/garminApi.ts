@@ -26,7 +26,17 @@ export async function fetchHeartRate(date?: string): Promise<HeartRateSummary> {
   const url = date ? `${API_BASE}/heartrate?date=${date}` : `${API_BASE}/heartrate`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HR fetch failed: ${res.status}`);
-  const data = await res.json();
+  let data = await res.json();
+
+  // If today has no data, try yesterday
+  if (!date && (data.points ?? []).length === 0 && data.restingHeartRate == null) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const yRes = await fetch(`${API_BASE}/heartrate?date=${yesterday}`);
+    if (yRes.ok) {
+      const yData = await yRes.json();
+      if ((yData.points ?? []).length > 0) data = yData;
+    }
+  }
 
   const points: HeartRatePoint[] = data.points ?? [];
   const values = points.map((p: HeartRatePoint) => p.value);
@@ -47,7 +57,17 @@ export async function fetchSleep(date?: string): Promise<SleepSummary> {
   const url = date ? `${API_BASE}/sleep?date=${date}` : `${API_BASE}/sleep`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Sleep fetch failed: ${res.status}`);
-  const data = await res.json();
+  let data = await res.json();
+
+  // If today has no sleep data, try yesterday
+  if (!date && (data.totalSleepMinutes ?? 0) === 0) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const yRes = await fetch(`${API_BASE}/sleep?date=${yesterday}`);
+    if (yRes.ok) {
+      const yData = await yRes.json();
+      if ((yData.totalSleepMinutes ?? 0) > 0) data = yData;
+    }
+  }
 
   const stages: SleepStage[] = (data.stages ?? []).map((s: { stage: string; startTime: string; endTime: string; durationMinutes: number }) => ({
     stage: s.stage as SleepStage['stage'],

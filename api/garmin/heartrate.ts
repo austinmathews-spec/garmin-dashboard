@@ -13,20 +13,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const client = await getGarminClient();
     const hr = await client.getHeartRate(date);
 
-    const points = (hr.heartRateValues ?? [])
-      .flat()
-      .filter((entry: { heartrate: number; timestamp: number }) => entry.heartrate > 0)
-      .map((entry: { heartrate: number; timestamp: number }) => ({
-        timestamp: new Date(entry.timestamp).toISOString(),
-        value: entry.heartrate,
-      }));
+    const rawValues = hr.heartRateValues ?? [];
+    const points: { timestamp: string; value: number }[] = [];
+
+    for (const entry of rawValues.flat()) {
+      if (entry == null) continue;
+      // Handle both [timestamp, hr] array format and {timestamp, heartrate} object format
+      if (Array.isArray(entry)) {
+        const [ts, val] = entry as unknown as [number, number | null];
+        if (val != null && val > 0) {
+          points.push({ timestamp: new Date(ts).toISOString(), value: val });
+        }
+      } else if (typeof entry === 'object' && 'heartrate' in entry) {
+        const obj = entry as { timestamp: number; heartrate: number };
+        if (obj.heartrate != null && obj.heartrate > 0) {
+          points.push({ timestamp: new Date(obj.timestamp).toISOString(), value: obj.heartrate });
+        }
+      }
+    }
 
     return res.status(200).json({
       date: hr.calendarDate,
-      restingHeartRate: hr.restingHeartRate,
-      maxHeartRate: hr.maxHeartRate,
-      minHeartRate: hr.minHeartRate,
-      lastSevenDaysAvgRestingHeartRate: hr.lastSevenDaysAvgRestingHeartRate,
+      restingHeartRate: hr.restingHeartRate ?? null,
+      maxHeartRate: hr.maxHeartRate ?? null,
+      minHeartRate: hr.minHeartRate ?? null,
+      lastSevenDaysAvgRestingHeartRate: hr.lastSevenDaysAvgRestingHeartRate ?? null,
       points,
     });
   } catch (error) {
