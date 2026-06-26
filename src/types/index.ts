@@ -78,4 +78,26 @@ export interface DailySummary {
   bodyBattery: number;   // 0-100
 }
 
+export interface WeightEntry {
+  date: string;
+  weightLbs: number;
+  weightKg: number;
+  bmi: number | null;
+  bodyFatPct: number | null;
+  bodyWaterPct: number | null;
+  muscleMassKg: number | null;
+  boneMassKg: number | null;
+  visceralFat: number | null;
+  metabolicAge: number | null;
+  timestamp: string;
+}
+
+export interface WeightSummary {
+  entries: WeightEntry[];
+  latestEntry: WeightEntry | null;
+  averageWeightLbs: number;
+  averageBodyFatPct: number | null;
+  averageBmi: number | null;
+}
+
 export type TimeRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'All';

@@ -6,6 +6,7 @@ import { HeartRateScreen } from '../screens/HeartRateScreen';
 import { SleepScreen } from '../screens/SleepScreen';
 import { ActivitiesScreen } from '../screens/ActivitiesScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { WeightScreen } from '../screens/WeightScreen';
 import { Colors, FontSize, Spacing } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -14,6 +15,7 @@ const TAB_ICONS: Record<string, string> = {
   'Heart Rate': '❤️',
   Sleep: '🌙',
   Activities: '🏃',
+  Weight: '⚖️',
   Settings: '⚙️',
 };
 
@@ -46,6 +48,7 @@ export function AppNavigator() {
         <Tab.Screen name="Heart Rate" component={HeartRateScreen} />
         <Tab.Screen name="Sleep" component={SleepScreen} />
         <Tab.Screen name="Activities" component={ActivitiesScreen} />
+        <Tab.Screen name="Weight" component={WeightScreen} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>

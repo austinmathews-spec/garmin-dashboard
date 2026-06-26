@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getMockHeartRate, getMockSleep, getMockActivities } from './mockData';
-import { fetchHeartRate, fetchSleep, fetchActivities } from './garminApi';
-import type { HeartRateSummary, SleepSummary, Activity } from '../types';
+import { getMockHeartRate, getMockSleep, getMockActivities, getMockWeight } from './mockData';
+import { fetchHeartRate, fetchSleep, fetchActivities, fetchWeight } from './garminApi';
+import type { HeartRateSummary, SleepSummary, Activity, WeightSummary } from '../types';
 
 export type DataSource = 'mock' | 'live';
 
@@ -140,6 +140,49 @@ export function useActivitiesData(
 
     return () => { cancelled = true; };
   }, [source, limit, refreshKey]);
+
+  return { data, loading, error, refresh };
+}
+
+export function useWeightData(
+  source: DataSource,
+): UseGarminDataResult<WeightSummary> {
+  const [data, setData] = useState<WeightSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    if (source === 'mock') {
+      const mock = getMockWeight();
+      setData(mock);
+      setLoading(false);
+    } else {
+      fetchWeight()
+        .then((result) => {
+          if (!cancelled) {
+            setData(result);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(err.message);
+            setLoading(false);
+            const mock = getMockWeight();
+            setData(mock);
+          }
+        });
+    }
+
+    return () => { cancelled = true; };
+  }, [source, refreshKey]);
 
   return { data, loading, error, refresh };
 }
