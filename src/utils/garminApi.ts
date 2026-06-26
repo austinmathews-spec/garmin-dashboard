@@ -1,4 +1,4 @@
-import type { HeartRatePoint, HeartRateSummary, HeartRateZone, SleepSummary, SleepStage, Activity } from '../types';
+import type { HeartRatePoint, HeartRateSummary, HeartRateZone, SleepSummary, SleepStage, Activity, WeightSummary, WeightEntry } from '../types';
 
 const API_BASE = '/api/garmin';
 
@@ -120,4 +120,45 @@ export async function fetchActivities(limit = 10): Promise<Activity[]> {
     maxHeartRate: a.maxHeartRate,
     avgPace: a.avgPace,
   }));
+}
+
+export async function fetchWeight(): Promise<WeightSummary> {
+  const res = await fetch(`${API_BASE}/weight`);
+  if (!res.ok) throw new Error(`Weight fetch failed: ${res.status}`);
+  const data = await res.json();
+
+  const entries: WeightEntry[] = (data.entries ?? []).map((e: WeightEntry) => ({
+    date: e.date,
+    weightLbs: e.weightLbs,
+    weightKg: e.weightKg,
+    bmi: e.bmi,
+    bodyFatPct: e.bodyFatPct,
+    bodyWaterPct: e.bodyWaterPct,
+    muscleMassKg: e.muscleMassKg,
+    boneMassKg: e.boneMassKg,
+    visceralFat: e.visceralFat,
+    metabolicAge: e.metabolicAge,
+    timestamp: e.timestamp,
+  }));
+
+  const latest = entries.length > 0 ? entries[entries.length - 1] : null;
+  const avgWeight = entries.length > 0
+    ? Math.round(entries.reduce((s, e) => s + e.weightLbs, 0) / entries.length * 10) / 10
+    : 0;
+  const fatEntries = entries.filter(e => e.bodyFatPct != null);
+  const avgFat = fatEntries.length > 0
+    ? Math.round(fatEntries.reduce((s, e) => s + (e.bodyFatPct ?? 0), 0) / fatEntries.length * 10) / 10
+    : null;
+  const bmiEntries = entries.filter(e => e.bmi != null);
+  const avgBmi = bmiEntries.length > 0
+    ? Math.round(bmiEntries.reduce((s, e) => s + (e.bmi ?? 0), 0) / bmiEntries.length * 10) / 10
+    : null;
+
+  return {
+    entries,
+    latestEntry: latest,
+    averageWeightLbs: avgWeight,
+    averageBodyFatPct: avgFat,
+    averageBmi: avgBmi,
+  };
 }

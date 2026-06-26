@@ -4,6 +4,8 @@ import type {
   Activity,
   DailySummary,
   HeartRatePoint,
+  WeightSummary,
+  WeightEntry,
 } from '../types';
 
 function todayStr(): string {
@@ -188,4 +190,45 @@ export function getMockWeeklySleep(): SleepSummary[] {
     });
   }
   return results;
+}
+
+export function getMockWeight(): WeightSummary {
+  const entries: WeightEntry[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const baseWeight = 175 - (29 - i) * 0.1 + Math.random() * 2 - 1;
+    const weightLbs = Math.round(baseWeight * 10) / 10;
+    entries.push({
+      date: d.toISOString().split('T')[0],
+      weightLbs,
+      weightKg: Math.round(weightLbs / 2.20462 * 100) / 100,
+      bmi: Math.round((weightLbs / 2.20462 / (1.78 * 1.78)) * 10) / 10,
+      bodyFatPct: Math.round((18 + Math.random() * 3) * 10) / 10,
+      bodyWaterPct: Math.round((55 + Math.random() * 4) * 10) / 10,
+      muscleMassKg: Math.round((35 + Math.random() * 2) * 100) / 100,
+      boneMassKg: Math.round((3.1 + Math.random() * 0.2) * 100) / 100,
+      visceralFat: Math.round(8 + Math.random() * 3),
+      metabolicAge: 28 + Math.round(Math.random() * 3),
+      timestamp: d.toISOString(),
+    });
+  }
+
+  const latest = entries[entries.length - 1];
+  const avgWeight = Math.round(entries.reduce((s, e) => s + e.weightLbs, 0) / entries.length * 10) / 10;
+  const fatEntries = entries.filter(e => e.bodyFatPct != null);
+  const avgFat = fatEntries.length > 0
+    ? Math.round(fatEntries.reduce((s, e) => s + (e.bodyFatPct ?? 0), 0) / fatEntries.length * 10) / 10
+    : null;
+  const bmiEntries = entries.filter(e => e.bmi != null);
+  const avgBmi = bmiEntries.length > 0
+    ? Math.round(bmiEntries.reduce((s, e) => s + (e.bmi ?? 0), 0) / bmiEntries.length * 10) / 10
+    : null;
+
+  return {
+    entries,
+    latestEntry: latest,
+    averageWeightLbs: avgWeight,
+    averageBodyFatPct: avgFat,
+    averageBmi: avgBmi,
+  };
 }
