@@ -23,6 +23,8 @@ import Animated, {
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { Card } from '../components';
 import { getMockSleep, getMockWeeklySleep } from '../utils/mockData';
+import { useSleepData } from '../utils/useGarminData';
+import { useDataSource } from '../utils/DataSourceContext';
 import type { SleepSummary, SleepStage, TimeRange } from '../types';
 
 const CHART_HEIGHT = 120;
@@ -419,7 +421,10 @@ export function SleepScreen() {
   const [mode, setMode] = useState<ChartMode>('lastNight');
   const [timeRange, setTimeRange] = useState<TimeRange>('1W');
 
-  const todaySleep = useMemo(() => getMockSleep(), []);
+  const { source } = useDataSource();
+  const { data: liveSleep } = useSleepData(source);
+  const mockSleep = useMemo(() => getMockSleep(), []);
+  const todaySleep = liveSleep ?? mockSleep;
   const weeklySleep = useMemo(() => getMockWeeklySleep(), []);
   const avgMinutes = useMemo(() => getAvgSleepMinutes(weeklySleep), [weeklySleep]);
 

@@ -21,6 +21,8 @@ import Animated, {
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { Card, StatValue } from '../components';
 import { getMockActivities } from '../utils/mockData';
+import { useActivitiesData } from '../utils/useGarminData';
+import { useDataSource } from '../utils/DataSourceContext';
 import type { Activity, HeartRatePoint } from '../types';
 
 // ── Constants ──
@@ -522,7 +524,10 @@ const emptyStyles = StyleSheet.create({
 export function ActivitiesScreen() {
   const insets = useSafeAreaInsets();
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
-  const activities = useMemo(() => getMockActivities(), []);
+  const { source } = useDataSource();
+  const { data: liveActivities } = useActivitiesData(source);
+  const mockActivities = useMemo(() => getMockActivities(), []);
+  const activities = liveActivities ?? mockActivities;
   const fadeIn = useSharedValue(0);
 
   const openDetail = useCallback(
