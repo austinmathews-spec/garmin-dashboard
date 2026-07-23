@@ -7,6 +7,7 @@ import {
   Pressable,
   Modal,
   ScrollView,
+  TextInput,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +24,7 @@ import { Card, StatValue } from '../components';
 import { getMockActivities } from '../utils/mockData';
 import { useActivitiesData } from '../utils/useGarminData';
 import { useDataSource } from '../utils/DataSourceContext';
+import { useWorkoutLocations } from '../utils/workoutLocations';
 import type { Activity, HeartRatePoint } from '../types';
 
 // ── Constants ──
@@ -121,9 +123,11 @@ function computeHRZones(
 
 function ActivityCard({
   activity,
+  location,
   onPress,
 }: {
   activity: Activity;
+  location?: string;
   onPress: () => void;
 }) {
   const icon = ACTIVITY_ICONS[activity.type] ?? '\u{1F3C3}';
@@ -141,6 +145,11 @@ function ActivityCard({
             <Text style={cardStyles.meta}>
               {formatDate(activity.date)} · {formatDuration(activity.durationMinutes)}
             </Text>
+            {location ? (
+              <Text style={cardStyles.location} numberOfLines={1}>
+                {'\u{1F4CD}'} {location}
+              </Text>
+            ) : null}
           </View>
           <View style={[cardStyles.typeBadge, { backgroundColor: accentColor + '20' }]}>
             <Text style={[cardStyles.typeText, { color: accentColor }]}>{activity.type}</Text>
@@ -180,6 +189,7 @@ const cardStyles = StyleSheet.create({
   headerText: { flex: 1, marginLeft: Spacing.sm },
   name: { color: Colors.text, fontSize: FontSize.lg, fontWeight: '600' },
   meta: { color: Colors.textSecondary, fontSize: FontSize.sm, marginTop: 2 },
+  location: { color: Colors.textSecondary, fontSize: FontSize.xs, marginTop: 2 },
   typeBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
@@ -353,9 +363,13 @@ const chartStyles = StyleSheet.create({
 
 function ActivityDetail({
   activity,
+  location,
+  onSetLocation,
   onClose,
 }: {
   activity: Activity;
+  location?: string;
+  onSetLocation: (activityId: string, location: string) => void;
   onClose: () => void;
 }) {
   const { width: screenWidth } = useWindowDimensions();
@@ -363,6 +377,11 @@ function ActivityDetail({
   const insets = useSafeAreaInsets();
   const accentColor = ACTIVITY_COLORS[activity.type] ?? Colors.green;
   const icon = ACTIVITY_ICONS[activity.type] ?? '\u{1F3C3}';
+  const [locationDraft, setLocationDraft] = useState(location ?? '');
+
+  const saveLocation = useCallback(() => {
+    onSetLocation(activity.id, locationDraft);
+  }, [activity.id, locationDraft, onSetLocation]);
 
   const hrPoints = useMemo(
     () =>
@@ -398,6 +417,28 @@ function ActivityDetail({
         {/* HR Chart */}
         <Card title="Heart Rate">
           <HRChart points={hrPoints} durationMinutes={activity.durationMinutes} containerWidth={chartContainerWidth} />
+        </Card>
+
+        {/* Location */}
+        <Card title="Location">
+          <View style={detailStyles.locationRow}>
+            <TextInput
+              style={detailStyles.locationInput}
+              placeholder="Tag a location (e.g. Central Park)"
+              placeholderTextColor={Colors.textTertiary}
+              value={locationDraft}
+              onChangeText={setLocationDraft}
+              onSubmitEditing={saveLocation}
+              onBlur={saveLocation}
+              returnKeyType="done"
+            />
+            <Pressable
+              style={({ pressed }) => [detailStyles.locationSaveBtn, pressed && { opacity: 0.7 }]}
+              onPress={saveLocation}
+            >
+              <Text style={detailStyles.locationSaveTxt}>Save</Text>
+            </Pressable>
+          </View>
         </Card>
 
         {/* Summary Stats */}
@@ -493,6 +534,24 @@ const detailStyles = StyleSheet.create({
   },
   splitRow: { flexDirection: 'row', paddingVertical: Spacing.xs },
   splitCell: { flex: 1, textAlign: 'center' },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationInput: {
+    flex: 1,
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  locationSaveBtn: {
+    marginLeft: Spacing.sm,
+    backgroundColor: Colors.green,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  locationSaveTxt: { color: '#FFFFFF', fontSize: FontSize.sm, fontWeight: '700' },
   splitHeaderTxt: { color: Colors.textSecondary, fontSize: FontSize.xs, fontWeight: '600' },
   splitVal: { color: Colors.text, fontSize: FontSize.sm },
 });
@@ -528,6 +587,7 @@ export function ActivitiesScreen() {
   const { data: liveActivities } = useActivitiesData(source);
   const mockActivities = useMemo(() => getMockActivities(), []);
   const activities = liveActivities ?? mockActivities;
+  const { locations, setLocation } = useWorkoutLocations();
   const fadeIn = useSharedValue(0);
 
   const openDetail = useCallback(
@@ -548,8 +608,10 @@ export function ActivitiesScreen() {
   }));
 
   const renderItem = useCallback(
-    ({ item }: { item: Activity }) => <ActivityCard activity={item} onPress={() => openDetail(item)} />,
-    [openDetail],
+    ({ item }: { item: Activity }) => (
+      <ActivityCard activity={item} location={locations[item.id]} onPress={() => openDetail(item)} />
+    ),
+    [openDetail, locations],
   );
 
   const keyExtractor = useCallback((item: Activity) => item.id, []);
@@ -573,7 +635,12 @@ export function ActivitiesScreen() {
       <Modal visible={selectedActivity !== null} animationType="slide" presentationStyle="fullScreen">
         {selectedActivity && (
           <Animated.View style={[{ flex: 1 }, backdropStyle]}>
-            <ActivityDetail activity={selectedActivity} onClose={closeDetail} />
+            <ActivityDetail
+              activity={selectedActivity}
+              location={locations[selectedActivity.id]}
+              onSetLocation={setLocation}
+              onClose={closeDetail}
+            />
           </Animated.View>
         )}
       </Modal>
